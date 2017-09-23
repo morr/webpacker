@@ -3,6 +3,7 @@
 
 const config = require('./config')
 const assetHost = require('./asset_host')
+const addCacheLoader = require('./lib/add_cache_loader')
 
 const { basename, dirname, join, relative, resolve } = require('path')
 const { sync } = require('glob')
@@ -59,33 +60,21 @@ function getModulePaths() {
   return result
 }
 
-function addCacheLoader(rules) {
-  const cacheLoader = {
-    loader: 'cache-loader',
-    options: {
-      cacheDirectory: join(config.cache_path, 'cache-loader')
-    }
-  }
-  for (let rule of rules) {
-    if (rule.use) {
-      rule.use.unshift(cacheLoader)
-    } else if (rule.loader) {
-      let ruleLoader = null
-      if (rule.options) {
-        ruleLoader = { loader: rule.loader, options: rule.options }
-        delete rule.options
-      }
-      rule.use = [cacheLoader, ruleLoader || rule.loader]
-      delete rule.loader
-    }
-  }
-  return rules
-}
-
 module.exports = class Environment {
   constructor() {
     this.loaders = getLoaderMap()
     this.plugins = getPluginMap()
+  }
+
+  addCacheLoader(loader_names) {
+    if (!loader_names) {
+      loader_names = getLoaderMap().keys()
+    } else if (loader_names.constructor === String) {
+      loader_names = [loader_names]
+    }
+    Array.from(loader_names).forEach((loader_name) =>
+      addCacheLoader(this.loaders.get(loader_name))
+    )
   }
 
   toWebpackConfig() {
@@ -100,7 +89,7 @@ module.exports = class Environment {
       },
 
       module: {
-        rules: addCacheLoader(Array.from(this.loaders.values()))
+        rules: Array.from(this.loaders.values())
       },
 
       plugins: Array.from(this.plugins.values()),
