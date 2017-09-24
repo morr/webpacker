@@ -68,11 +68,11 @@ module.exports = class Environment {
 
   addCacheLoader(loader_names) {
     if (!loader_names) {
-      loader_names = getLoaderMap().keys()
+      loader_names = Array.from(getLoaderMap().keys())
     } else if (loader_names.constructor === String) {
       loader_names = [loader_names]
     }
-    Array.from(loader_names).forEach((loader_name) =>
+    loader_names.forEach((loader_name) =>
       addCacheLoader(this.loaders.get(loader_name))
     )
   }
